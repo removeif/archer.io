@@ -1,0 +1,3158 @@
+<!DOCTYPE html>
+<html lang="en">
+    <!-- title -->
+
+
+
+
+<!-- keywords -->
+
+
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
+    <meta name="author" content="John Doe">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="John Doe">
+    
+    <meta name="keywords" content="categories-java,Kafka基本架构及原理,hexo,hexo-theme,hexo-blog">
+    
+    <meta name="description" content="">
+    <meta http-equiv="Cache-control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>Kafka基本架构及原理 · fi3ework&#39;s Studio</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/archer.io/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s infinite;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href= "/archer.io/css/style.css?v=20180824" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="stylesheet" href= "/archer.io/css/mobile.css?v=20180824" media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href= "/archer.io/assets/favicon.ico" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
+    <link rel="preload" href="/archer.io/scripts/main.js" as="script" />
+    <link rel="preload" as="font" href="/archer.io/font/Oswald-Regular.ttf" crossorigin>
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin>
+    
+    <!-- fancybox -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.js" defer></script>
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/archer.io/" >fi3ework&#39;s Studio.</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">Kafka基本架构及原理</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href=/archer.io/>fi3ework's Studio.</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style="
+
+
+
+
+
+
+
+height:50vh;
+">
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/archer.io/intro/post-bg.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            Kafka基本架构及原理
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "Kafka">Kafka</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count word-count">5.2k</span>Reading time: <span class="post-count reading-time">21 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2020/02/02</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/archer.io/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/archer.io/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <h3 id="一、为什么需要消息系统"><a href="#一、为什么需要消息系统" class="headerlink" title="一、为什么需要消息系统"></a>一、为什么需要消息系统</h3><p>1.解耦：<br>    允许你独立的扩展或修改两边的处理过程，只要确保它们遵守同样的接口约束。<br>2.冗余：<br>    消息队列把数据进行持久化直到它们已经被完全处理，通过这一方式规避了数据丢失风险。许多消息队列所采用的”插入-获取-删除”范式中，在把一个消息从队列中删除之前，需要你的处理系统明确的指出该消息已经被处理完毕，从而确保你的数据被安全的保存直到你使用完毕。<br>3.扩展性：<br>    因为消息队列解耦了你的处理过程，所以增大消息入队和处理的频率是很容易的，只要另外增加处理过程即可。<a id="more"></a><br>4.灵活性 &amp; 峰值处理能力：<br>    在访问量剧增的情况下，应用仍然需要继续发挥作用，但是这样的突发流量并不常见。如果为以能处理这类峰值访问为标准来投入资源随时待命无疑是巨大的浪费。使用消息队列能够使关键组件顶住突发的访问压力，而不会因为突发的超负荷的请求而完全崩溃。<br>5.可恢复性：<br>    系统的一部分组件失效时，不会影响到整个系统。消息队列降低了进程间的耦合度，所以即使一个处理消息的进程挂掉，加入队列中的消息仍然可以在系统恢复后被处理。<br>6.顺序保证：<br>    在大多使用场景下，数据处理的顺序都很重要。大部分消息队列本来就是排序的，并且能保证数据会按照特定的顺序来处理。（Kafka 保证一个 Partition 内的消息的有序性）<br>7.缓冲：<br>    有助于控制和优化数据流经过系统的速度，解决生产消息和消费消息的处理速度不一致的情况。<br>8.异步通信：<br>    很多时候，用户不想也不需要立即处理消息。消息队列提供了异步处理机制，允许用户把一个消息放入队列，但并不立即处理它。想向队列中放入多少消息就放多少，然后在需要的时候再去处理它们。</p>
+<h3 id="二、kafka-架构"><a href="#二、kafka-架构" class="headerlink" title="二、kafka 架构"></a>二、kafka 架构</h3><h4 id="拓扑结构"><a href="#拓扑结构" class="headerlink" title="拓扑结构"></a>拓扑结构</h4><p><img src="https://cdn.jsdelivr.net/gh/removeif/blog_image/img/2020/20200202112014.png" alt=""></p>
+<p> 相关名词解释:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">1.producer：</span><br><span class="line">　　消息生产者，发布消息到 kafka 集群的终端或服务。</span><br><span class="line">2.broker：</span><br><span class="line">　　kafka 集群中包含的服务器。</span><br><span class="line">3.topic：</span><br><span class="line">　　每条发布到 kafka 集群的消息属于的类别，即 kafka 是面向 topic 的。</span><br><span class="line">4.partition：</span><br><span class="line">　　partition 是物理上的概念，每个 topic 包含一个或多个 partition。kafka 分配的单位是 partition。</span><br><span class="line">5.consumer：</span><br><span class="line">　　从 kafka 集群中消费消息的终端或服务。</span><br><span class="line">6.Consumer group：</span><br><span class="line">　　high-level consumer API 中，每个 consumer 都属于一个 consumer group，每条消息只能被 consumer group 中的一个 Consumer 消费，但可以被多个 consumer group 消费。</span><br><span class="line">7.replica：</span><br><span class="line">　　partition 的副本，保障 partition 的高可用。</span><br><span class="line">8.leader：</span><br><span class="line">　　replica 中的一个角色， producer 和 consumer 只跟 leader 交互。</span><br><span class="line">9.follower：</span><br><span class="line">　　replica 中的一个角色，从 leader 中复制数据。</span><br><span class="line">10.controller：</span><br><span class="line">　　kafka 集群中的其中一个服务器，用来进行 leader election 以及 各种 failover。</span><br><span class="line">12.zookeeper：</span><br><span class="line">　　kafka 通过 zookeeper 来存储集群的 meta 信息。</span><br></pre></td></tr></table></figure>
+
+<h4 id="zookeeper-节点"><a href="#zookeeper-节点" class="headerlink" title="zookeeper 节点"></a>zookeeper 节点</h4><p>kafka 在 zookeeper 中的存储结构如下图所示：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/removeif/blog_image/img/2020/20200202112250.png" alt=""></p>
+<h3 id="三、producer-发布消息"><a href="#三、producer-发布消息" class="headerlink" title="三、producer 发布消息"></a>三、producer 发布消息</h3><h4 id="写入方式"><a href="#写入方式" class="headerlink" title="写入方式"></a>写入方式</h4><p>producer 采用 push 模式将消息发布到 broker，每条消息都被 append 到 patition 中，属于顺序写磁盘（顺序写磁盘效率比随机写内存要高，保障 kafka 吞吐率）。</p>
+<h4 id="消息路由"><a href="#消息路由" class="headerlink" title="消息路由"></a>消息路由</h4><p>producer 发送消息到 broker 时，会根据分区算法选择将其存储到哪一个 partition。其路由机制为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. 指定了 patition，则直接使用；</span><br><span class="line">2. 未指定 patition 但指定 key，通过对 key 的 value 进行hash 选出一个 patition</span><br><span class="line">3. patition 和 key 都未指定，使用轮询选出一个 patition。</span><br></pre></td></tr></table></figure>
+
+<p>附上 java 客户端分区源码，一目了然：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//创建消息实例</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">ProducerRecord</span><span class="params">(String topic, Integer partition, Long timestamp, K key, V value)</span> </span>&#123;</span><br><span class="line">     <span class="keyword">if</span> (topic == <span class="keyword">null</span>)</span><br><span class="line">          <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"Topic cannot be null"</span>);</span><br><span class="line">     <span class="keyword">if</span> (timestamp != <span class="keyword">null</span> &amp;&amp; timestamp &lt; <span class="number">0</span>)</span><br><span class="line">          <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"Invalid timestamp "</span> + timestamp);</span><br><span class="line">     <span class="keyword">this</span>.topic = topic;</span><br><span class="line">     <span class="keyword">this</span>.partition = partition;</span><br><span class="line">     <span class="keyword">this</span>.key = key;</span><br><span class="line">     <span class="keyword">this</span>.value = value;</span><br><span class="line">     <span class="keyword">this</span>.timestamp = timestamp;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//计算 patition，如果指定了 patition 则直接使用，否则使用 key 计算</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">partition</span><span class="params">(ProducerRecord&lt;K, V&gt; record, <span class="keyword">byte</span>[] serializedKey , <span class="keyword">byte</span>[] serializedValue, Cluster cluster)</span> </span>&#123;</span><br><span class="line">     Integer partition = record.partition();</span><br><span class="line">     <span class="keyword">if</span> (partition != <span class="keyword">null</span>) &#123;</span><br><span class="line">          List&lt;PartitionInfo&gt; partitions = cluster.partitionsForTopic(record.topic());</span><br><span class="line">          <span class="keyword">int</span> lastPartition = partitions.size() - <span class="number">1</span>;</span><br><span class="line">          <span class="keyword">if</span> (partition &lt; <span class="number">0</span> || partition &gt; lastPartition) &#123;</span><br><span class="line">               <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(String.format(<span class="string">"Invalid partition given with record: %d is not in the range [0...%d]."</span>, partition, lastPartition));</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">return</span> partition;</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="keyword">return</span> <span class="keyword">this</span>.partitioner.partition(record.topic(), record.key(), serializedKey, record.value(), serializedValue, cluster);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用 key 选取 patition</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">partition</span><span class="params">(String topic, Object key, <span class="keyword">byte</span>[] keyBytes, Object value, <span class="keyword">byte</span>[] valueBytes, Cluster cluster)</span> </span>&#123;</span><br><span class="line">     List&lt;PartitionInfo&gt; partitions = cluster.partitionsForTopic(topic);</span><br><span class="line">     <span class="keyword">int</span> numPartitions = partitions.size();</span><br><span class="line">     <span class="keyword">if</span> (keyBytes == <span class="keyword">null</span>) &#123;</span><br><span class="line">          <span class="keyword">int</span> nextValue = counter.getAndIncrement();</span><br><span class="line">          List&lt;PartitionInfo&gt; availablePartitions = cluster.availablePartitionsForTopic(topic);</span><br><span class="line">          <span class="keyword">if</span> (availablePartitions.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">               <span class="keyword">int</span> part = DefaultPartitioner.toPositive(nextValue) % availablePartitions.size();</span><br><span class="line">               <span class="keyword">return</span> availablePartitions.get(part).partition();</span><br><span class="line">          &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">               <span class="keyword">return</span> DefaultPartitioner.toPositive(nextValue) % numPartitions;</span><br><span class="line">          &#125;</span><br><span class="line">     &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          <span class="comment">//对 keyBytes 进行 hash 选出一个 patition</span></span><br><span class="line">          <span class="keyword">return</span> DefaultPartitioner.toPositive(Utils.murmur2(keyBytes)) % numPartitions;</span><br><span class="line">     &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="写入流程"><a href="#写入流程" class="headerlink" title="写入流程"></a>写入流程</h4><p>producer 写入消息序列图:</p>
+<p><img src="https://cdn.jsdelivr.net/gh/removeif/blog_image/img/2020/20200202112612.png" alt=""></p>
+<p>流程说明：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">1. producer 先从 zookeeper 的 &quot;&#x2F;brokers&#x2F;...&#x2F;state&quot; 节点找到该 partition 的 leader</span><br><span class="line">2. producer 将消息发送给该 leader</span><br><span class="line">3. leader 将消息写入本地 log</span><br><span class="line">4. followers 从 leader pull 消息，写入本地 log 后 leader 发送 ACK</span><br><span class="line">5. leader 收到所有 ISR 中的 replica 的 ACK 后，增加 HW（high watermark，最后 commit 的 offset） 并向 producer 发送 ACK</span><br></pre></td></tr></table></figure>
+
+<h4 id="producer-delivery-guarantee"><a href="#producer-delivery-guarantee" class="headerlink" title="producer delivery guarantee"></a>producer delivery guarantee</h4><p>一般情况下存在三种情况：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. At most once 消息可能会丢，但绝不会重复传输</span><br><span class="line">2. At least one 消息绝不会丢，但可能会重复传输</span><br><span class="line">3. Exactly once 每条消息肯定会被传输一次且仅传输一次</span><br></pre></td></tr></table></figure>
+
+<p>当 producer 向 broker 发送消息时，一旦这条消息被 commit，由于 replication 的存在，它就不会丢。但是如果 producer 发送数据给 broker 后，遇到网络问题而造成通信中断，那 Producer 就无法判断该条消息是否已经 commit。虽然 Kafka 无法确定网络故障期间发生了什么，但是 producer 可以生成一种类似于主键的东西，发生故障时幂等性的重试多次，这样就做到了 Exactly once，但目前还并未实现。所以目前默认情况下一条消息从 producer 到 broker 是确保了 At least once，可通过设置 producer 异步发送实现At most once。</p>
+<h3 id="四、broker-保存消息"><a href="#四、broker-保存消息" class="headerlink" title="四、broker 保存消息"></a>四、broker 保存消息</h3><h4 id="存储方式"><a href="#存储方式" class="headerlink" title="存储方式"></a>存储方式</h4><p>物理上把 topic 分成一个或多个 patition（对应 server.properties 中的 num.partitions=3 配置），每个 patition 物理上对应一个文件夹（该文件夹存储该 patition 的所有消息和索引文件），如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/removeif/blog_image/img/2020/20200202112822.png" alt=""></p>
+<h4 id="存储策略"><a href="#存储策略" class="headerlink" title="存储策略"></a>存储策略</h4><p>无论消息是否被消费，kafka 都会保留所有消息。有两种策略可以删除旧数据：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1. 基于时间：log.retention.hours&#x3D;168</span><br><span class="line">2. 基于大小：log.retention.bytes&#x3D;1073741824</span><br></pre></td></tr></table></figure>
+
+<p>需要注意的是，因为Kafka读取特定消息的时间复杂度为O(1)，即与文件大小无关，所以这里删除过期文件与提高 Kafka 性能无关。</p>
+<h4 id="topic-创建与删除"><a href="#topic-创建与删除" class="headerlink" title="topic 创建与删除"></a>topic 创建与删除</h4><h5 id="创建-topic"><a href="#创建-topic" class="headerlink" title="创建 topic"></a>创建 topic</h5><p>创建 topic 的序列图</p>
+<p><img src="https://cdn.jsdelivr.net/gh/removeif/blog_image/img/2020/20200202112925.png" alt=""></p>
+<p>流程说明：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">1. controller 在 ZooKeeper 的 &#x2F;brokers&#x2F;topics 节点上注册 watcher，当 topic 被创建，则 controller 会通过 watch 得到该 topic 的 partition&#x2F;replica 分配。</span><br><span class="line">2. controller从 &#x2F;brokers&#x2F;ids 读取当前所有可用的 broker 列表，对于 set_p 中的每一个 partition：</span><br><span class="line">   2.1 从分配给该 partition 的所有 replica（称为AR）中任选一个可用的 broker 作为新的 leader，并将AR设置为新的 ISR</span><br><span class="line">   2.2 将新的 leader 和 ISR 写入 &#x2F;brokers&#x2F;topics&#x2F;[topic]&#x2F;partitions&#x2F;[partition]&#x2F;state</span><br><span class="line">3. controller 通过 RPC 向相关的 broker 发送 LeaderAndISRRequest。</span><br></pre></td></tr></table></figure>
+
+<h5 id="删除-topic"><a href="#删除-topic" class="headerlink" title="删除 topic"></a>删除 topic</h5><p>删除 topic 的序列图</p>
+<p><img src="https://cdn.jsdelivr.net/gh/removeif/blog_image/img/2020/20200202113026.png" alt=""></p>
+<p>流程说明：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1. controller 在 zooKeeper 的 &#x2F;brokers&#x2F;topics 节点上注册 watcher，当 topic 被删除，则 controller 会通过 watch 得到该 topic 的 partition&#x2F;replica 分配。</span><br><span class="line">2. 若 delete.topic.enable&#x3D;false，结束；否则 controller 注册在 &#x2F;admin&#x2F;delete_topics 上的 watch 被 fire，controller 通过回调向对应的 broker 发送 StopReplicaRequest。</span><br></pre></td></tr></table></figure>
+
+<h3 id="五、kafka-HA"><a href="#五、kafka-HA" class="headerlink" title="五、kafka HA"></a>五、kafka HA</h3><h4 id="replication"><a href="#replication" class="headerlink" title="replication"></a>replication</h4><p>如图.1所示，同一个 partition 可能会有多个 replica（对应 server.properties 配置中的 default.replication.factor=N）。没有 replica 的情况下，一旦 broker 宕机，其上所有 patition 的数据都不可被消费，同时 producer 也不能再将数据存于其上的 patition。引入replication 之后，同一个 partition 可能会有多个 replica，而这时需要在这些 replica 之间选出一个 leader，producer 和 consumer 只与这个 leader 交互，其它 replica 作为 follower 从 leader 中复制数据。</p>
+<p>Kafka 分配 Replica 的算法如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. 将所有 broker（假设共 n 个 broker）和待分配的 partition 排序</span><br><span class="line">2. 将第 i 个 partition 分配到第（i mod n）个 broker 上</span><br><span class="line">3. 将第 i 个 partition 的第 j 个 replica 分配到第（(i + j) mode n）个 broker上</span><br></pre></td></tr></table></figure>
+
+<h4 id="leader-failover"><a href="#leader-failover" class="headerlink" title="leader failover"></a>leader failover</h4><p>当 partition 对应的 leader 宕机时，需要从 follower 中选举出新 leader。在选举新leader时，一个基本的原则是，新的 leader 必须拥有旧 leader commit 过的所有消息。</p>
+<p>kafka 在 zookeeper 中（/brokers/…/state）动态维护了一个 ISR（in-sync replicas），由3.3节的写入流程可知 ISR 里面的所有 replica 都跟上了 leader，只有 ISR 里面的成员才能选为 leader。对于 f+1 个 replica，一个 partition 可以在容忍 f 个 replica 失效的情况下保证消息不丢失。</p>
+<p>当所有 replica 都不工作时，有两种可行的方案：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1. 等待 ISR 中的任一个 replica 活过来，并选它作为 leader。可保障数据不丢失，但时间可能相对较长。</span><br><span class="line">2. 选择第一个活过来的 replica（不一定是 ISR 成员）作为 leader。无法保障数据不丢失，但相对不可用时间较短。</span><br></pre></td></tr></table></figure>
+
+<p>kafka 0.8.* 使用第二种方式。</p>
+<p>kafka 通过 Controller 来选举 leader，流程请参考5.3节。</p>
+<h4 id="broker-failover"><a href="#broker-failover" class="headerlink" title="broker failover"></a>broker failover</h4><p>kafka broker failover 序列图如下所示：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/removeif/blog_image/img/2020/20200202113536.png" alt=""></p>
+<p>流程说明：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">1. controller 在 zookeeper 的 &#x2F;brokers&#x2F;ids&#x2F;[brokerId] 节点注册 Watcher，当 broker 宕机时 zookeeper 会 fire watch</span><br><span class="line">2. controller 从 &#x2F;brokers&#x2F;ids 节点读取可用broker</span><br><span class="line">3. controller决定set_p，该集合包含宕机 broker 上的所有 partition</span><br><span class="line">4. 对 set_p 中的每一个 partition</span><br><span class="line">    4.1 从&#x2F;brokers&#x2F;topics&#x2F;[topic]&#x2F;partitions&#x2F;[partition]&#x2F;state 节点读取 ISR</span><br><span class="line">    4.2 决定新 leader（如4.3节所描述）</span><br><span class="line">    4.3 将新 leader、ISR、controller_epoch 和 leader_epoch 等信息写入 state 节点</span><br><span class="line">5. 通过 RPC 向相关 broker 发送 leaderAndISRRequest 命令</span><br></pre></td></tr></table></figure>
+
+<h4 id="controller-failover"><a href="#controller-failover" class="headerlink" title="controller failover"></a>controller failover</h4><p>当 controller 宕机时会触发 controller failover。每个 broker 都会在 zookeeper 的 “/controller” 节点注册 watcher，当 controller 宕机时 zookeeper 中的临时节点消失，所有存活的 broker 收到 fire 的通知，每个 broker 都尝试创建新的 controller path，只有一个竞选成功并当选为 controller。</p>
+<p>当新的 controller 当选时，会触发 KafkaController.onControllerFailover 方法，在该方法中完成如下操作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"> 1. 读取并增加 Controller Epoch。</span><br><span class="line"> 2. 在 reassignedPartitions Patch(&#x2F;admin&#x2F;reassign_partitions) 上注册 watcher。</span><br><span class="line"> 3. 在 preferredReplicaElection Path(&#x2F;admin&#x2F;preferred_replica_election) 上注册 watcher。</span><br><span class="line"> 4. 通过 partitionStateMachine 在 broker Topics Patch(&#x2F;brokers&#x2F;topics) 上注册 watcher。</span><br><span class="line"> 5. 若 delete.topic.enable&#x3D;true（默认值是 false），则 partitionStateMachine 在 Delete Topic Patch(&#x2F;admin&#x2F;delete_topics) 上注册 watcher。</span><br><span class="line"> 6. 通过 replicaStateMachine在 Broker Ids Patch(&#x2F;brokers&#x2F;ids)上注册Watch。</span><br><span class="line"> 7. 初始化 ControllerContext 对象，设置当前所有 topic，“活”着的 broker 列表，所有 partition 的 leader 及 ISR等。</span><br><span class="line"> 8. 启动 replicaStateMachine 和 partitionStateMachine。</span><br><span class="line"> 9. 将 brokerState 状态设置为 RunningAsController。</span><br><span class="line">10. 将每个 partition 的 Leadership 信息发送给所有“活”着的 broker。</span><br><span class="line">11. 若 auto.leader.rebalance.enable&#x3D;true（默认值是true），则启动 partition-rebalance 线程。</span><br><span class="line">12. 若 delete.topic.enable&#x3D;true 且Delete Topic Patch(&#x2F;admin&#x2F;delete_topics)中有值，则删除相应的Topic。</span><br></pre></td></tr></table></figure>
+
+<h3 id="六、consumer-消费消息"><a href="#六、consumer-消费消息" class="headerlink" title="六、consumer 消费消息"></a>六、consumer 消费消息</h3><h4 id="consumer-API"><a href="#consumer-API" class="headerlink" title="consumer API"></a>consumer API</h4><p>kafka 提供了两套 consumer API：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1. The high-level Consumer API</span><br><span class="line">2. The SimpleConsumer API</span><br></pre></td></tr></table></figure>
+
+<p>其中 high-level consumer API 提供了一个从 kafka 消费数据的高层抽象，而 SimpleConsumer API 则需要开发人员更多地关注细节。</p>
+<h5 id="The-high-level-consumer-API"><a href="#The-high-level-consumer-API" class="headerlink" title="The high-level consumer API"></a>The high-level consumer API</h5><p>high-level consumer API 提供了 consumer group 的语义，一个消息只能被 group 内的一个 consumer 所消费，且 consumer 消费消息时不关注 offset，最后一个 offset 由 zookeeper 保存。</p>
+<p>使用 high-level consumer API 可以是多线程的应用，应当注意：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. 如果消费线程大于 patition 数量，则有些线程将收不到消息</span><br><span class="line">2. 如果 patition 数量大于线程数，则有些线程多收到多个 patition 的消息</span><br><span class="line">3. 如果一个线程消费多个 patition，则无法保证你收到的消息的顺序，而一个 patition 内的消息是有序的</span><br></pre></td></tr></table></figure>
+
+<h5 id="The-SimpleConsumer-API"><a href="#The-SimpleConsumer-API" class="headerlink" title="The SimpleConsumer API"></a>The SimpleConsumer API</h5><p>如果你想要对 patition 有更多的控制权，那就应该使用 SimpleConsumer API，比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. 多次读取一个消息</span><br><span class="line">2. 只消费一个 patition 中的部分消息</span><br><span class="line">3. 使用事务来保证一个消息仅被消费一次</span><br></pre></td></tr></table></figure>
+
+<p>但是使用此 API 时，partition、offset、broker、leader 等对你不再透明，需要自己去管理。你需要做大量的额外工作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. 必须在应用程序中跟踪 offset，从而确定下一条应该消费哪条消息</span><br><span class="line">2. 应用程序需要通过程序获知每个 Partition 的 leader 是谁</span><br><span class="line">3. 需要处理 leader 的变更</span><br></pre></td></tr></table></figure>
+
+<p>使用 SimpleConsumer API 的一般流程如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">1. 查找到一个“活着”的 broker，并且找出每个 partition 的 leader</span><br><span class="line">2. 找出每个 partition 的 follower</span><br><span class="line">3. 定义好请求，该请求应该能描述应用程序需要哪些数据</span><br><span class="line">4. fetch 数据</span><br><span class="line">5. 识别 leader 的变化，并对之作出必要的响应</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>以下针对 high-level Consumer API 进行说明。</p>
+</blockquote>
+<h4 id="consumer-group"><a href="#consumer-group" class="headerlink" title="consumer group"></a>consumer group</h4><p>如 2.2 节所说， kafka 的分配单位是 patition。每个 consumer 都属于一个 group，一个 partition 只能被同一个 group 内的一个 consumer 所消费（也就保障了一个消息只能被 group 内的一个 consuemr 所消费），但是多个 group 可以同时消费这个 partition。</p>
+<p>kafka 的设计目标之一就是同时实现离线处理和实时处理，根据这一特性，可以使用 spark/Storm 这些实时处理系统对消息在线处理，同时使用 Hadoop 批处理系统进行离线处理，还可以将数据备份到另一个数据中心，只需要保证这三者属于不同的 consumer group。如下图所示：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/removeif/blog_image/img/2020/20200202113951.png" alt=""></p>
+<h4 id="消费方式"><a href="#消费方式" class="headerlink" title="消费方式"></a>消费方式</h4><p>consumer 采用 pull 模式从 broker 中读取数据。</p>
+<p>push 模式很难适应消费速率不同的消费者，因为消息发送速率是由 broker 决定的。它的目标是尽可能以最快速度传递消息，但是这样很容易造成 consumer 来不及处理消息，典型的表现就是拒绝服务以及网络拥塞。而 pull 模式则可以根据 consumer 的消费能力以适当的速率消费消息。</p>
+<p>对于 Kafka 而言，pull 模式更合适，它可简化 broker 的设计，consumer 可自主控制消费消息的速率，同时 consumer 可以自己控制消费方式——即可批量消费也可逐条消费，同时还能选择不同的提交方式从而实现不同的传输语义。</p>
+<h4 id="consumer-delivery-guarantee"><a href="#consumer-delivery-guarantee" class="headerlink" title="consumer delivery guarantee"></a>consumer delivery guarantee</h4><p>如果将 consumer 设置为 autocommit，consumer 一旦读到数据立即自动 commit。如果只讨论这一读取消息的过程，那 Kafka 确保了 Exactly once。</p>
+<p>但实际使用中应用程序并非在 consumer 读取完数据就结束了，而是要进行进一步处理，而数据处理与 commit 的顺序在很大程度上决定了consumer delivery guarantee：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">1.读完消息先 commit 再处理消息。</span><br><span class="line">    这种模式下，如果 consumer 在 commit 后还没来得及处理消息就 crash 了，下次重新开始工作后就无法读到刚刚已提交而未处理的消息，这就对应于 At most once</span><br><span class="line">2.读完消息先处理再 commit。</span><br><span class="line">    这种模式下，如果在处理完消息之后 commit 之前 consumer crash 了，下次重新开始工作时还会处理刚刚未 commit 的消息，实际上该消息已经被处理过了。这就对应于 At least once。</span><br><span class="line">3.如果一定要做到 Exactly once，就需要协调 offset 和实际操作的输出。</span><br><span class="line">    精典的做法是引入两阶段提交。如果能让 offset 和操作输入存在同一个地方，会更简洁和通用。这种方式可能更好，因为许多输出系统可能不支持两阶段提交。比如，consumer 拿到数据后可能把数据放到 HDFS，如果把最新的 offset 和数据本身一起写到 HDFS，那就可以保证数据的输出和 offset 的更新要么都完成，要么都不完成，间接实现 Exactly once。（目前就 high-level API而言，offset 是存于Zookeeper 中的，无法存于HDFS，而SimpleConsuemr API的 offset 是由自己去维护的，可以将之存于 HDFS 中）</span><br></pre></td></tr></table></figure>
+
+<p>总之，Kafka 默认保证 At least once，并且允许通过设置 producer 异步提交来实现 At most once（见文章《kafka consumer防止数据丢失》）。而 Exactly once 要求与外部存储系统协作，幸运的是 kafka 提供的 offset 可以非常直接非常容易得使用这种方式。</p>
+<p>更多关于 kafka 传输语义的信息请参考《Message Delivery Semantics》。</p>
+<h4 id="consumer-rebalance"><a href="#consumer-rebalance" class="headerlink" title="consumer rebalance"></a>consumer rebalance</h4><p>当有 consumer 加入或退出、以及 partition 的改变（如 broker 加入或退出）时会触发 rebalance。consumer rebalance算法如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">1. 将目标 topic 下的所有 partirtion 排序，存于PT</span><br><span class="line">2. 对某 consumer group 下所有 consumer 排序，存于 CG，第 i 个consumer 记为 Ci</span><br><span class="line">3. N&#x3D;size(PT)&#x2F;size(CG)，向上取整</span><br><span class="line">4. 解除 Ci 对原来分配的 partition 的消费权（i从0开始）</span><br><span class="line">5. 将第i*N到（i+1）*N-1个 partition 分配给 Ci</span><br></pre></td></tr></table></figure>
+
+<p>在 0.8.*版本，每个 consumer 都只负责调整自己所消费的 partition，为了保证整个consumer group 的一致性，当一个 consumer 触发了 rebalance 时，该 consumer group 内的其它所有其它 consumer 也应该同时触发 rebalance。这会导致以下几个问题：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">1.Herd effect</span><br><span class="line">　　任何 broker 或者 consumer 的增减都会触发所有的 consumer 的 rebalance</span><br><span class="line">2.Split Brain</span><br><span class="line">　　每个 consumer 分别单独通过 zookeeper 判断哪些 broker 和 consumer 宕机了，那么不同 consumer 在同一时刻从 zookeeper 看到的 view 就可能不一样，这是由 zookeeper 的特性决定的，这就会造成不正确的 reblance 尝试。</span><br><span class="line">3. 调整结果不可控</span><br><span class="line">　　所有的 consumer 都并不知道其它 consumer 的 rebalance 是否成功，这可能会导致 kafka 工作在一个不正确的状态。</span><br></pre></td></tr></table></figure>
+
+<p>基于以上问题，kafka 设计者考虑在0.9.*版本开始使用中心 coordinator 来控制 consumer rebalance，然后又从简便性和验证要求两方面考虑，计划在 consumer 客户端实现分配方案。（见文章《Kafka Detailed Consumer Coordinator Design》和《Kafka Client-side Assignment Proposal》），此处不再赘述。</p>
+<h3 id="七、注意事项"><a href="#七、注意事项" class="headerlink" title="七、注意事项"></a>七、注意事项</h3><h4 id="producer-无法发送消息的问题"><a href="#producer-无法发送消息的问题" class="headerlink" title="producer 无法发送消息的问题"></a>producer 无法发送消息的问题</h4><p>最开始在本机搭建了kafka伪集群，本地 producer 客户端成功发布消息至 broker。随后在服务器上搭建了 kafka 集群，在本机连接该集群，producer 却无法发布消息到 broker（奇怪也没有抛错）。最开始怀疑是 iptables 没开放，于是开放端口，结果还不行（又开始是代码问题、版本问题等等，倒腾了很久）。最后没办法，一项一项查看 server.properties 配置，发现以下两个配置：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># The address the socket server listens on. It will get the value returned from </span><br><span class="line"># java.net.InetAddress.getCanonicalHostName() if not configured.</span><br><span class="line">#   FORMAT:</span><br><span class="line">#     listeners &#x3D; security_protocol:&#x2F;&#x2F;host_name:port</span><br><span class="line">#   EXAMPLE:</span><br><span class="line">#     listeners &#x3D; PLAINTEXT:&#x2F;&#x2F;your.host.name:9092</span><br><span class="line">listeners&#x3D;PLAINTEXT:&#x2F;&#x2F;:9092</span><br><span class="line"></span><br><span class="line"># Hostname and port the broker will advertise to producers and consumers. If not set, </span><br><span class="line"># it uses the value for &quot;listeners&quot; if configured. Otherwise, it will use the value</span><br><span class="line"># returned from java.net.InetAddress.getCanonicalHostName().</span><br><span class="line"># advertised.listeners&#x3D;PLAINTEXT:&#x2F;&#x2F;your.host.name:9092</span><br></pre></td></tr></table></figure>
+
+<p>以上说的就是 advertised.listeners 是 broker 给 producer 和 consumer 连接使用的，如果没有设置，就使用 listeners，而如果 host_name 没有设置的话，就使用 java.net.InetAddress.getCanonicalHostName() 方法返回的主机名。</p>
+<p>修改方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1. listeners&#x3D;PLAINTEXT:&#x2F;&#x2F;121.10.26.XXX:9092</span><br><span class="line">2. advertised.listeners&#x3D;PLAINTEXT:&#x2F;&#x2F;121.10.26.XXX:9092</span><br></pre></td></tr></table></figure>
+
+<p>修改后重启服务，正常工作。关于更多 kafka 配置说明，见文章《<a href="http://blog.csdn.net/louisliaoxh/article/details/51516084" target="_blank" rel="noopener">Kafka学习整理三(borker(0.9.0及0.10.0)配置)</a>》。</p>
+<h3 id="八、参考相关文章列表"><a href="#八、参考相关文章列表" class="headerlink" title="八、参考相关文章列表"></a>八、参考相关文章列表</h3><blockquote>
+<ol>
+<li><p>《<a href="http://www.infoq.com/cn/articles/kafka-analysis-part-1/" target="_blank" rel="noopener">Kafka剖析（一）：Kafka背景及架构介绍</a>》</p>
+</li>
+<li><p>《<a href="http://www.infoq.com/cn/articles/kafka-analysis-part-2/" target="_blank" rel="noopener">Kafka设计解析（二）：Kafka High Availability （上）</a>》</p>
+</li>
+<li><p>《<a href="http://www.infoq.com/cn/articles/kafka-analysis-part-3/" target="_blank" rel="noopener">Kafka设计解析（二）：Kafka High Availability （下）</a>》</p>
+</li>
+<li><p>《<a href="http://www.infoq.com/cn/articles/kafka-analysis-part-4/" target="_blank" rel="noopener">Kafka设计解析（四）：Kafka Consumer解析</a>》</p>
+</li>
+<li><p>《<a href="http://www.infoq.com/cn/articles/kafka-analysis-part-5" target="_blank" rel="noopener">Kafka设计解析（五）：Kafka Benchmark</a>》</p>
+</li>
+<li><p>《<a href="http://blog.csdn.net/louisliaoxh/article/details/51516084" target="_blank" rel="noopener">Kafka学习整理三(borker(0.9.0及0.10.0)配置)</a>》</p>
+</li>
+<li><p>《<a href="https://cwiki.apache.org/confluence/display/KAFKA/Consumer+Group+Example" target="_blank" rel="noopener">Using the High Level Consumer</a>》</p>
+</li>
+<li><p>《<a href="https://cwiki.apache.org/confluence/display/KAFKA/0.8.0+SimpleConsumer+Example" target="_blank" rel="noopener">Using SimpleConsumer</a>》</p>
+</li>
+<li><p>《<a href="https://cwiki.apache.org/confluence/display/KAFKA/Consumer+Client+Re-Design" target="_blank" rel="noopener">Consumer Client Re-Design</a>》</p>
+</li>
+<li><p>《<a href="http://kafka.apache.org/documentation.html#semantics" target="_blank" rel="noopener">Message Delivery Semantics</a>》</p>
+</li>
+<li><p>《<a href="https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Detailed+Consumer+Coordinator+Design#KafkaDetailedConsumerCoordinatorDesign-WARN:Thisisanobsoletedesign.Thedesignthat' target="_blank" rel="noopener"simplementedinKafka0.9.0isdescribedinthiswiki.">Kafka Detailed Consumer Coordinator Design</a>》</p>
+</li>
+<li><p>《<a href="https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Client-side+Assignment+Proposal" target="_blank" rel="noopener">Kafka Client-side Assignment Proposal</a>》</p>
+</li>
+<li><p>《<a href="http://www.infoq.com/cn/articles/technology-comparison-of-kafka-and-distributedlog?utm_campaign=rightbar_v2&utm_source=infoq&utm_medium=articles_link&utm_content=link_text" target="_blank" rel="noopener">Kafka和DistributedLog技术对比</a>》</p>
+</li>
+<li><p>《<a href="http://orchome.com/6" target="_blank" rel="noopener">kafka安装和启动</a>》</p>
+</li>
+<li><p>《<a href="http://kane-xie.iteye.com/blog/2225085" target="_blank" rel="noopener">kafka consumer防止数据丢失</a>》</p>
+</li>
+</ol>
+</blockquote>
+<p>参考文章:<br><a href="https://www.cnblogs.com/cyfonly/p/5954614.html" target="_blank" rel="noopener">参考链接</a></p>
+
+    </article>
+    <!-- license  -->
+    
+        <div class="license-wrapper">
+            <p>Author：<a href="https://removeif.github.io">John Doe</a>
+            <p>原文链接：<a href="https://removeif.github.io/2020/02/02/design-architecture/Kafka%E5%9F%BA%E6%9C%AC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/">https://removeif.github.io/2020/02/02/design-architecture/Kafka%E5%9F%BA%E6%9C%AC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/</a>
+            <p>发表日期：<a href="https://removeif.github.io/2020/02/02/design-architecture/Kafka%E5%9F%BA%E6%9C%AC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/">February 2nd 2020, 11:47:53 am</a>
+            <p>更新日期：<a href="https://removeif.github.io/2020/02/02/design-architecture/Kafka%E5%9F%BA%E6%9C%AC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/">February 6th 2020, 11:27:44 am</a>
+            <p>版权声明：本文采用<a rel="license noopener" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+        </div>
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+                <div class="nextSlogan">Next Post</div>
+                <a href= "/archer.io/2020/02/05/design-architecture/%E7%A7%92%E6%9D%80%E7%B3%BB%E7%BB%9F%E5%A6%82%E4%BD%95%E6%94%AF%E6%92%91%E7%99%BE%E4%B8%87QPS/" title= "秒杀系统如何支撑百万QPS">
+                    <div class="nextTitle">秒杀系统如何支撑百万QPS</div>
+                </a>
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/archer.io/2020/02/02/develop/Git-rebase-%E7%94%A8%E6%B3%95%E7%A4%BA%E4%BE%8B%E5%B0%8F%E7%BB%93/" title= "Git-rebase-用法示例小结">
+                    <div class="prevTitle">Git-rebase-用法示例小结</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!-- gitalk评论 -->
+
+    <!-- utteranc评论 -->
+
+<script src='https://utteranc.es/client.js'
+                repo='removeif/utteranc_comment'
+                issue-term='1580615273000'
+                label=''
+                theme=''
+                crossorigin='anonymous'
+                async>
+</script>
+
+    <!-- partial('_partial/comment/changyan') -->
+    <!--PC版-->
+
+
+    
+    
+
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:12345@qq.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/fi3ework" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+            
+                <span class="iconfont-archer wechat" title=wechat>
+                  
+                  <img class="profile-qr" src="/archer.io/assets/example_qr.png" />
+                </span>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#一、为什么需要消息系统"><span class="toc-number">1.</span> <span class="toc-text">一、为什么需要消息系统</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#二、kafka-架构"><span class="toc-number">2.</span> <span class="toc-text">二、kafka 架构</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#拓扑结构"><span class="toc-number">2.1.</span> <span class="toc-text">拓扑结构</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#zookeeper-节点"><span class="toc-number">2.2.</span> <span class="toc-text">zookeeper 节点</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#三、producer-发布消息"><span class="toc-number">3.</span> <span class="toc-text">三、producer 发布消息</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#写入方式"><span class="toc-number">3.1.</span> <span class="toc-text">写入方式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#消息路由"><span class="toc-number">3.2.</span> <span class="toc-text">消息路由</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#写入流程"><span class="toc-number">3.3.</span> <span class="toc-text">写入流程</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#producer-delivery-guarantee"><span class="toc-number">3.4.</span> <span class="toc-text">producer delivery guarantee</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#四、broker-保存消息"><span class="toc-number">4.</span> <span class="toc-text">四、broker 保存消息</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#存储方式"><span class="toc-number">4.1.</span> <span class="toc-text">存储方式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#存储策略"><span class="toc-number">4.2.</span> <span class="toc-text">存储策略</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#topic-创建与删除"><span class="toc-number">4.3.</span> <span class="toc-text">topic 创建与删除</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#创建-topic"><span class="toc-number">4.3.1.</span> <span class="toc-text">创建 topic</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#删除-topic"><span class="toc-number">4.3.2.</span> <span class="toc-text">删除 topic</span></a></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#五、kafka-HA"><span class="toc-number">5.</span> <span class="toc-text">五、kafka HA</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#replication"><span class="toc-number">5.1.</span> <span class="toc-text">replication</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#leader-failover"><span class="toc-number">5.2.</span> <span class="toc-text">leader failover</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#broker-failover"><span class="toc-number">5.3.</span> <span class="toc-text">broker failover</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#controller-failover"><span class="toc-number">5.4.</span> <span class="toc-text">controller failover</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#六、consumer-消费消息"><span class="toc-number">6.</span> <span class="toc-text">六、consumer 消费消息</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#consumer-API"><span class="toc-number">6.1.</span> <span class="toc-text">consumer API</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#The-high-level-consumer-API"><span class="toc-number">6.1.1.</span> <span class="toc-text">The high-level consumer API</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#The-SimpleConsumer-API"><span class="toc-number">6.1.2.</span> <span class="toc-text">The SimpleConsumer API</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#consumer-group"><span class="toc-number">6.2.</span> <span class="toc-text">consumer group</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#消费方式"><span class="toc-number">6.3.</span> <span class="toc-text">消费方式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#consumer-delivery-guarantee"><span class="toc-number">6.4.</span> <span class="toc-text">consumer delivery guarantee</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#consumer-rebalance"><span class="toc-number">6.5.</span> <span class="toc-text">consumer rebalance</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#七、注意事项"><span class="toc-number">7.</span> <span class="toc-text">七、注意事项</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#producer-无法发送消息的问题"><span class="toc-number">7.1.</span> <span class="toc-text">producer 无法发送消息的问题</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#八、参考相关文章列表"><span class="toc-number">8.</span> <span class="toc-text">八、参考相关文章列表</span></a></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 101
+        </div>
+        <!-- search  -->
+        
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2020 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/01</span><a class="archive-post-title" href= "/archer.io/2020/03/01/hello-world/" >Hello World</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/29</span><a class="archive-post-title" href= "/archer.io/2020/02/29/english-learn/%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95-%E5%85%B3%E7%B3%BB%E4%BB%8E%E5%8F%A5/" >英语语法-关系从句</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/29</span><a class="archive-post-title" href= "/archer.io/2020/02/29/english-learn/%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95-%E5%89%AF%E8%AF%8D/" >英语语法-副词</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/28</span><a class="archive-post-title" href= "/archer.io/2020/02/28/english-learn/%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95-%E5%8A%A8%E5%90%8D%E8%AF%8D/" >英语语法-动名词</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/28</span><a class="archive-post-title" href= "/archer.io/2020/02/28/english-learn/%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95-%E5%8A%A8%E8%AF%8D%E4%B8%8D%E5%AE%9A%E5%BC%8F/" >英语语法-动词不定式</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/27</span><a class="archive-post-title" href= "/archer.io/2020/02/27/english-learn/%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95-%E8%A2%AB%E5%8A%A8%E8%AF%AD%E6%80%81/" >英语语法-被动语态</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/27</span><a class="archive-post-title" href= "/archer.io/2020/02/27/english-learn/%E8%8B%B1%E8%AF%AD%E8%AF%AD%E6%B3%95-%E5%AE%9A%E8%AF%AD%E4%BB%8E%E5%8F%A5/" >英语语法-定语从句</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/24</span><a class="archive-post-title" href= "/archer.io/2020/02/24/java/frame/spring-boot%E5%AE%9E%E7%8E%B0%E5%8A%A8%E6%80%81%E5%A2%9E%E5%88%A0%E5%90%AF%E5%81%9C%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1/" >spring-boot实现动态增删启停定时任务</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/20</span><a class="archive-post-title" href= "/archer.io/2020/02/20/java/frame/SpringBoot-Valid%E6%B3%A8%E8%A7%A3%E4%BB%A5%E5%8F%8A%E5%85%A8%E5%B1%80%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E5%99%A8%E4%BC%98%E9%9B%85%E5%A4%84%E7%90%86%E5%8F%82%E6%95%B0%E9%AA%8C%E8%AF%81/" >SpringBoot@Valid注解以及全局异常处理器优雅处理参数验证</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/10</span><a class="archive-post-title" href= "/archer.io/2020/02/10/algorithm/%E7%AE%97%E6%B3%95%E6%88%90%E9%95%BF%E4%B9%8B%E8%B7%AFleetcode21-22/" >算法成长之路leetcode21-22</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/09</span><a class="archive-post-title" href= "/archer.io/2020/02/09/law/%E4%B8%AD%E5%9B%BD%E5%85%B1%E4%BA%A7%E5%85%9A%E7%AB%A0%E7%A8%8B-2017%E4%BF%AE%E6%94%B9/" >中国共产党章程(2017修改)</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/05</span><a class="archive-post-title" href= "/archer.io/2020/02/05/design-architecture/%E7%A7%92%E6%9D%80%E7%B3%BB%E7%BB%9F%E5%A6%82%E4%BD%95%E6%94%AF%E6%92%91%E7%99%BE%E4%B8%87QPS/" >秒杀系统如何支撑百万QPS</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/02</span><a class="archive-post-title" href= "/archer.io/2020/02/02/develop/Git-rebase-%E7%94%A8%E6%B3%95%E7%A4%BA%E4%BE%8B%E5%B0%8F%E7%BB%93/" >Git-rebase-用法示例小结</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/02</span><a class="archive-post-title" href= "/archer.io/2020/02/02/design-architecture/Kafka%E5%9F%BA%E6%9C%AC%E6%9E%B6%E6%9E%84%E5%8F%8A%E5%8E%9F%E7%90%86/" >Kafka基本架构及原理</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/01</span><a class="archive-post-title" href= "/archer.io/2020/02/01/develop/Git%E5%A6%82%E4%BD%95%E4%BC%98%E9%9B%85%E5%9C%B0%E5%9B%9E%E9%80%80%E4%BB%A3%E7%A0%81/" >Git如何优雅地回退代码</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/31</span><a class="archive-post-title" href= "/archer.io/2020/01/31/java/frame/Spring%E7%9A%84Bean%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/" >Spring的Bean生命周期</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/19</span><a class="archive-post-title" href= "/archer.io/2020/01/19/algorithm/%E7%AE%97%E6%B3%95%E6%88%90%E9%95%BF%E4%B9%8B%E8%B7%AFleetcode19-20/" >算法成长之路leetcode19-20</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/12</span><a class="archive-post-title" href= "/archer.io/2020/01/12/java/frame/springboot%E4%BC%98%E9%9B%85%E7%9A%84%E5%81%9C%E6%AD%A2%E6%9C%8D%E5%8A%A1/" >springboot优雅的停止服务</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/08</span><a class="archive-post-title" href= "/archer.io/2020/01/08/algorithm/%E7%AE%97%E6%B3%95%E6%88%90%E9%95%BF%E4%B9%8B%E8%B7%AFleetcode17-18/" >算法成长之路leetcode17-18</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/04</span><a class="archive-post-title" href= "/archer.io/2020/01/04/java/frame/springboot-restful-swagger%E5%AE%9E%E6%88%98/" >springboot-restful-swagger实战</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/01</span><a class="archive-post-title" href= "/archer.io/2020/01/01/algorithm/%E7%AE%97%E6%B3%95%E6%88%90%E9%95%BF%E4%B9%8B%E8%B7%AFleetcode15-16/" >算法成长之路leetcode15-16</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2019 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/31</span><a class="archive-post-title" href= "/archer.io/2019/12/31/think/2019%E5%B9%B4%E7%BB%88%E6%80%BB%E7%BB%93/" >2019年终总结</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/26</span><a class="archive-post-title" href= "/archer.io/2019/12/26/python/%E4%B8%80%E5%BC%A0%E5%9B%BE%E5%AD%A6%E4%BC%9Apython3/" >一张图学会python3</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/26</span><a class="archive-post-title" href= "/archer.io/2019/12/26/java/basic/hash%E5%86%B2%E7%AA%81%E5%BC%80%E6%94%BE%E5%9C%B0%E5%9D%80%E6%B3%95rehash/" >hash冲突开放地址法rehash</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/25</span><a class="archive-post-title" href= "/archer.io/2019/12/25/travel/%E8%A5%BF%E5%AE%89%E6%97%85%E6%B8%B8%E6%94%BB%E7%95%A53%E6%97%A5%E6%B8%B8/" >西安旅游攻略3日游</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/24</span><a class="archive-post-title" href= "/archer.io/2019/12/24/algorithm/%E7%AE%97%E6%B3%95%E6%88%90%E9%95%BF%E4%B9%8B%E8%B7%AFleetcode13-14/" >算法成长之路leetcode13-14</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/22</span><a class="archive-post-title" href= "/archer.io/2019/12/22/algorithm/%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95%E8%A7%A3%E6%9E%90%E7%A4%BA%E4%BE%8B/" >贪心算法解析示例</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/21</span><a class="archive-post-title" href= "/archer.io/2019/12/21/theme/%E4%B8%8D%E8%92%9C%E5%AD%90%E7%BB%9F%E8%AE%A1%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/" >不蒜子统计常见问题</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/17</span><a class="archive-post-title" href= "/archer.io/2019/12/17/algorithm/%E7%AE%97%E6%B3%95%E6%88%90%E9%95%BF%E4%B9%8B%E8%B7%AFleetcode11-12/" >算法成长之路leetcode11-12</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/16</span><a class="archive-post-title" href= "/archer.io/2019/12/16/develop/intellj-idea-%E8%AF%A6%E7%BB%86%E8%B0%83%E8%AF%95%E4%BB%A3%E7%A0%81debug/" >intellj idea 详细调试代码debug</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/14</span><a class="archive-post-title" href= "/archer.io/2019/12/14/algorithm/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92DP%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3/" >动态规划DP算法详解</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/14</span><a class="archive-post-title" href= "/archer.io/2019/12/14/algorithm/%E7%AE%97%E6%B3%95%E6%88%90%E9%95%BF%E4%B9%8B%E8%B7%AFleetcode9-10/" >算法成长之路leetcode9-10</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/10</span><a class="archive-post-title" href= "/archer.io/2019/12/10/algorithm/%E7%AE%97%E6%B3%95%E6%88%90%E9%95%BF%E4%B9%8B%E8%B7%AFleetcode7-8/" >算法成长之路leetcode7-8</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/10</span><a class="archive-post-title" href= "/archer.io/2019/12/10/database/mysql/mysql-b-Tree%E7%B4%A2%E5%BC%95/" >mysql-b+Tree索引</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/05</span><a class="archive-post-title" href= "/archer.io/2019/12/05/algorithm/%E7%AE%97%E6%B3%95%E6%88%90%E9%95%BF%E4%B9%8B%E8%B7%AFleetcode5-6/" >算法成长之路leetcode5-6</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/05</span><a class="archive-post-title" href= "/archer.io/2019/12/05/algorithm/%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE%E6%B3%95%E6%A8%A1%E6%9D%BF%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%80%9D%E6%83%B3-leetcode35/" >二分查找法模板的基本思想-leetcode35</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/28</span><a class="archive-post-title" href= "/archer.io/2019/11/28/theme/github-Issue-%E4%BD%9C%E4%B8%BA%E5%8D%9A%E5%AE%A2%E5%BE%AE%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E5%BA%94%E7%94%A8/" >github Issue 作为博客微型数据库的应用</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/23</span><a class="archive-post-title" href= "/archer.io/2019/11/23/ios/%E8%8B%B9%E6%9E%9C6s-ios12-nfc-%E6%A8%A1%E6%8B%9F%E9%97%A8%E7%A6%81/" >苹果6s ios12 nfc 模拟门禁</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/18</span><a class="archive-post-title" href= "/archer.io/2019/11/18/health/%E5%B8%B8%E8%A7%81%E9%9A%94%E5%A4%9C%E8%8F%9C%E8%B0%A8%E6%85%8E%E9%A3%9F%E7%94%A8/" >常见隔夜菜谨慎食用</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/10</span><a class="archive-post-title" href= "/archer.io/2019/11/10/marathon/%E9%A9%AC%E6%8B%89%E6%9D%BE-2019%E8%A5%BF%E6%98%8C%E6%9C%80%E7%BE%8E%E8%B5%9B%E9%81%93%E9%82%9B%E6%B5%B7%E9%A9%AC%E6%8B%89%E6%9D%BE/" >马拉松-2019西昌最美赛道邛海马拉松</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/05</span><a class="archive-post-title" href= "/archer.io/2019/11/05/algorithm/%E7%AE%97%E6%B3%95%E6%88%90%E9%95%BF%E4%B9%8B%E8%B7%AFleetcode1-4/" >算法成长之路leetcode1-4</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/23</span><a class="archive-post-title" href= "/archer.io/2019/10/23/data-structure/%E7%94%A8%E6%A0%88%E5%AE%9E%E7%8E%B0%E9%98%9F%E5%88%97-%E7%94%A8%E9%98%9F%E5%88%97%E5%AE%9E%E7%8E%B0%E6%A0%88/" >用栈实现队列/用队列实现栈</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/23</span><a class="archive-post-title" href= "/archer.io/2019/10/23/front/%E6%9B%BF%E4%BB%A3web-cookie%E5%AD%98%E5%82%A8%E6%96%B9%E6%A1%88%E5%AE%9E%E7%8E%B0/" >替代web-cookie存储方案实现</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/17</span><a class="archive-post-title" href= "/archer.io/2019/10/17/database/redis/Redis%E7%9A%84%E5%86%85%E5%AD%98%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5%E9%97%AE%E9%A2%98/" >Redis的内存淘汰策略问题</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/17</span><a class="archive-post-title" href= "/archer.io/2019/10/17/java/basic/%E5%8E%9F%E7%A0%81%E8%A1%A5%E7%A0%81%E5%BC%82%E6%88%96%E4%B8%8E%E4%BD%8D%E8%BF%90%E7%AE%97%E7%A7%BB%E4%BD%8D%E7%9F%A5%E8%AF%86%E7%82%B9/" >原码补码异或与位运算移位知识点</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/13</span><a class="archive-post-title" href= "/archer.io/2019/10/13/breaking-news/2019%E5%B9%B4%E5%9B%BD%E5%BA%8670%E5%91%A8%E5%B9%B4%E9%98%85%E5%85%B5%E5%AE%8C%E6%95%B4%E5%9B%BE%E6%96%87%E8%A7%A3%E8%AF%B4/" >2019年国庆70周年阅兵完整图文解说(收藏!)</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/10</span><a class="archive-post-title" href= "/archer.io/2019/10/10/law/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E5%9B%BD%E6%97%97%E6%B3%95/" >中华人民共和国国旗法</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/10</span><a class="archive-post-title" href= "/archer.io/2019/10/10/law/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E5%AE%AA%E6%B3%95/" >中华人民共和国宪法</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/30</span><a class="archive-post-title" href= "/archer.io/2019/09/30/java/frame/Spring-%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96/" >Spring 如何解决循环依赖</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/27</span><a class="archive-post-title" href= "/archer.io/2019/09/27/java/frame/Spring-cloud-feign%E9%87%8D%E8%AF%95%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/" >Spring cloud feign重试问题排查</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/25</span><a class="archive-post-title" href= "/archer.io/2019/09/25/theme/github-page%E7%BD%91%E7%AB%99cdn%E4%BC%98%E5%8C%96%E5%8A%A0%E9%80%9F/" >github page网站cdn优化加速</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/23</span><a class="archive-post-title" href= "/archer.io/2019/09/23/tools/docker%E5%AE%89%E8%A3%85%E4%B8%8E%E4%BD%BF%E7%94%A8/" >docker安装与使用</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/19</span><a class="archive-post-title" href= "/archer.io/2019/09/19/theme/%E5%8D%9A%E5%AE%A2%E6%BA%90%E7%A0%81%E5%88%86%E4%BA%AB/" >博客源码分享</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/17</span><a class="archive-post-title" href= "/archer.io/2019/09/17/theme/%E5%8D%9A%E5%AE%A2%E6%8D%A2%E8%82%A4%E7%9A%84%E4%B8%80%E7%A7%8D%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F%E6%80%9D%E8%B7%AF/" >博客换肤的一种实现方式思路</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/13</span><a class="archive-post-title" href= "/archer.io/2019/09/13/theme/%E5%8D%9A%E5%AE%A2%E4%B8%ADgitalk%E6%9C%80%E6%96%B0%E8%AF%84%E8%AE%BA%E7%9A%84%E8%8E%B7%E5%8F%96/" >博客中gitalk最新评论的获取</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/11</span><a class="archive-post-title" href= "/archer.io/2019/09/11/java/basic/Java%E6%97%A5%E5%BF%97%E7%9A%84%E6%AD%A3%E7%A1%AE%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95/" >Java日志的正确使用方法</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/05</span><a class="archive-post-title" href= "/archer.io/2019/09/05/design-architecture/%E5%B9%B6%E5%8F%91%E6%89%A3%E6%AC%BE%E7%9B%B8%E5%85%B3%E9%97%AE%E9%A2%98/" >并发扣款相关问题</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/28</span><a class="archive-post-title" href= "/archer.io/2019/08/28/database/mysql/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98/" >MyBatis二级缓存</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/23</span><a class="archive-post-title" href= "/archer.io/2019/08/23/develop/Vim%E5%9F%BA%E6%9C%AC%E5%85%A5%E9%97%A8%E6%93%8D%E4%BD%9C/" >Vim基本入门操作</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/22</span><a class="archive-post-title" href= "/archer.io/2019/08/22/database/redis/redis%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81Redlock%E7%9A%84%E5%AE%9E%E7%8E%B0/" >redis分布式锁Redlock的实现</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/21</span><a class="archive-post-title" href= "/archer.io/2019/08/21/law/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E5%A9%9A%E5%A7%BB%E6%B3%95/" >中华人民共和国婚姻法</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/21</span><a class="archive-post-title" href= "/archer.io/2019/08/21/law/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E6%B6%88%E8%B4%B9%E8%80%85%E6%9D%83%E7%9B%8A%E4%BF%9D%E6%8A%A4%E6%B3%95/" >中华人民共和国消费者权益保护法</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/21</span><a class="archive-post-title" href= "/archer.io/2019/08/21/law/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E5%8A%B3%E5%8A%A8%E6%B3%95/" >中华人民共和国劳动法</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/21</span><a class="archive-post-title" href= "/archer.io/2019/08/21/database/mysql/mysql%E9%AB%98%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E8%A7%84%E8%8C%83%E6%96%B9%E6%B3%95/" >mysql高性能优化规范方法</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/21</span><a class="archive-post-title" href= "/archer.io/2019/08/21/law/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E5%88%91%E4%BA%8B%E8%AF%89%E8%AE%BC%E6%B3%95/" >中华人民共和国刑事诉讼法</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/16</span><a class="archive-post-title" href= "/archer.io/2019/08/16/java/basic/Java%E5%AE%B9%E5%99%A8%E9%9B%86%E5%90%88/" >Java容器集合</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/08</span><a class="archive-post-title" href= "/archer.io/2019/08/08/law/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E6%B3%95/" >中华人民共和国网络安全法</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/07</span><a class="archive-post-title" href= "/archer.io/2019/08/07/java/basic/Java%E5%B9%B6%E5%8F%91%E7%9B%B8%E5%85%B3%E7%9F%A5%E8%AF%86%E7%82%B9/" >Java并发相关知识点</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/24</span><a class="archive-post-title" href= "/archer.io/2019/07/24/java/basic/Java-%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6/" >Java 垃圾回收</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/archer.io/2019/07/19/java/basic/Java-BIO-NIO-AIO%E5%8C%BA%E5%88%AB%E4%B8%8E%E4%BD%BF%E7%94%A8/" >Java BIO NIO AIO区别与使用</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/05</span><a class="archive-post-title" href= "/archer.io/2019/07/05/database/%E5%B8%B8%E8%A7%81sql%E9%94%99%E8%AF%AF%E5%86%99%E6%B3%95/" >常见sql错误写法</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/03</span><a class="archive-post-title" href= "/archer.io/2019/07/03/database/mysql/mysql%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96%E6%96%B9%E6%A1%88/" >mysql索引优化方案</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/25</span><a class="archive-post-title" href= "/archer.io/2019/06/25/database/mysql/%E4%B8%80%E6%AC%A1%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E6%AD%BB%E9%94%81%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E8%BF%87%E7%A8%8B/" >一次数据库的死锁问题排查过程</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/20</span><a class="archive-post-title" href= "/archer.io/2019/06/20/theme/%E5%8D%9A%E5%AE%A2%E5%9B%BE%E7%89%87%E4%B8%8A%E4%BC%A0picgo%E5%B7%A5%E5%85%B7github%E5%9B%BE%E4%BC%A0%E4%BD%BF%E7%94%A8/" >博客图片上传picgo工具github图传使用</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/13</span><a class="archive-post-title" href= "/archer.io/2019/06/13/think/%E9%98%BF%E9%87%8C%E4%B8%80%E5%B9%B4%E7%9A%84%E6%88%90%E9%95%BF%E7%BB%8F%E5%8E%86/" >阿里一年的成长经历</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/04</span><a class="archive-post-title" href= "/archer.io/2019/06/04/database/mysql/mysql%E6%95%B0%E6%8D%AE%E5%BA%93%E7%B4%A2%E5%BC%95%E8%A7%A3%E6%9E%90/" >mysql数据库索引解析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/31</span><a class="archive-post-title" href= "/archer.io/2019/05/31/java/basic/java%E6%B3%A8%E8%A7%A3Annotation%E8%AF%B4%E6%98%8E%E5%AE%9E%E4%BE%8B/" >java注解Annotation说明实例</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/06</span><a class="archive-post-title" href= "/archer.io/2019/05/06/java/elasticsearch/elasticsearch6-x%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95%E5%92%8C%E5%88%86%E8%AF%8D/" >elasticsearch6.x倒排索引和分词</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/28</span><a class="archive-post-title" href= "/archer.io/2019/04/28/java/basic/Java%E7%89%88%E5%B8%B8%E7%94%A8%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%B4%E6%98%8E/" >Java版常用正则表达式说明</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/26</span><a class="archive-post-title" href= "/archer.io/2019/04/26/java/elasticsearch/Elasticsearch%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7api/" >Elasticsearch常用工具api</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/18</span><a class="archive-post-title" href= "/archer.io/2019/04/18/design-architecture/restful-api-%E8%AE%BE%E8%AE%A1%E4%BB%A5%E5%8F%8A%E5%B9%82%E7%AD%89%E6%80%A7%E7%9B%B8%E5%85%B3%E8%AE%BE%E8%AE%A1/" >restful api 设计以及幂等性相关设计</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/18</span><a class="archive-post-title" href= "/archer.io/2019/04/18/database/mysql/%E4%B8%80%E5%8D%83%E8%A1%8C-MySQL-%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0-%E8%BD%AC%E8%BD%BD/" >一千行 MySQL 学习笔记(转载)</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/28</span><a class="archive-post-title" href= "/archer.io/2019/02/28/theme/%E5%AE%89%E8%A3%85%E3%80%81%E9%83%A8%E5%88%86%E9%85%8D%E7%BD%AEicarus%E4%B8%BB%E9%A2%98%E4%B8%AD%E6%96%87%E7%89%88/" >安装、部分配置icarus主题中文版</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/07</span><a class="archive-post-title" href= "/archer.io/2019/01/07/java/basic/java%E5%9F%BA%E7%A1%80-final%E5%85%B3%E9%94%AE%E5%AD%97/" >java基础-final关键字</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/07</span><a class="archive-post-title" href= "/archer.io/2019/01/07/java/basic/java%E5%9F%BA%E7%A1%80-static%E5%85%B3%E9%94%AE%E5%AD%97/" >java基础-static关键字</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/06</span><a class="archive-post-title" href= "/archer.io/2019/01/06/java/design-mode/Java%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B9%8B%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8F/" >Java设计模式之代理模式</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/04</span><a class="archive-post-title" href= "/archer.io/2019/01/04/java/design-mode/Java%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B9%8B%E5%91%BD%E4%BB%A4%E6%A8%A1%E5%BC%8F/" >Java设计模式之命令模式</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2018 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/19</span><a class="archive-post-title" href= "/archer.io/2018/12/19/java/basic/java-8%E9%83%A8%E5%88%86%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/" >java 8部分读书笔记</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/04</span><a class="archive-post-title" href= "/archer.io/2018/12/04/java/design-mode/Java%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B9%8B%E9%80%82%E9%85%8D%E5%99%A8%E6%A8%A1%E5%BC%8F/" >Java设计模式之适配器模式</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/01</span><a class="archive-post-title" href= "/archer.io/2018/12/01/design-architecture/%E6%94%AF%E4%BB%98%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1-%E8%BD%AC%E8%BD%BD/" >支付系统设计(转载)</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/29</span><a class="archive-post-title" href= "/archer.io/2018/11/29/java/design-mode/Java%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B9%8B%E8%A3%85%E9%A5%B0%E8%80%85%E6%A8%A1%E5%BC%8F/" >Java设计模式之装饰者模式</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/24</span><a class="archive-post-title" href= "/archer.io/2018/11/24/java/design-mode/Java%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B9%8B%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F/" >Java设计模式之工厂模式</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/17</span><a class="archive-post-title" href= "/archer.io/2018/11/17/read-record/Effective-Java-2-%E9%81%87%E5%88%B0%E5%A4%9A%E4%B8%AA%E6%9E%84%E9%80%A0%E5%99%A8%E5%8F%82%E6%95%B0%E6%97%B6%E8%80%83%E8%99%91%E7%94%A8%E6%9E%84%E5%BB%BA%E5%99%A8/" >Effective-Java-2-遇到多个构造器参数时考虑用构建器</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/17</span><a class="archive-post-title" href= "/archer.io/2018/11/17/java/design-mode/Java%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B9%8B%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/" >Java设计模式之单例模式</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/16</span><a class="archive-post-title" href= "/archer.io/2018/11/16/algorithm/leetcode-2-Add-Two-Numbers/" >leetcode-2-Add Two Numbers</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/15</span><a class="archive-post-title" href= "/archer.io/2018/11/15/java/design-mode/Java%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B9%8B%E8%A7%82%E5%AF%9F%E8%80%85%E6%A8%A1%E5%BC%8F/" >Java设计模式之观察者模式</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/13</span><a class="archive-post-title" href= "/archer.io/2018/11/13/java/basic/Immutable-Object-%E4%B8%8D%E5%8F%AF%E5%8F%98%E5%AF%B9%E8%B1%A1-%E6%A8%A1%E5%BC%8F/" >Immutable Object(不可变对象)模式</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/13</span><a class="archive-post-title" href= "/archer.io/2018/11/13/java/elasticsearch/elasticsearch6-query-%E5%85%A8%E6%96%87%E6%9F%A5%E8%AF%A2%E4%B8%8E%E8%AF%8D%E9%A1%B9%E6%9F%A5%E8%AF%A2/" >elasticsearch6 query 全文查询与词项查询</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/11</span><a class="archive-post-title" href= "/archer.io/2018/11/11/algorithm/leetcode-1-Two-Sum/" >leetcode-1-Two Sum</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/11</span><a class="archive-post-title" href= "/archer.io/2018/11/11/think/Hello-blog/" >Hello blog</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/11</span><a class="archive-post-title" href= "/archer.io/2018/11/11/think/hello-world/" >Hello World</a>
+        </li>
+    
+    </div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="双指针"><span class="iconfont-archer">&#xe606;</span>双指针</span>
+    
+        <span class="sidebar-tag-name" data-tags="最长回文"><span class="iconfont-archer">&#xe606;</span>最长回文</span>
+    
+        <span class="sidebar-tag-name" data-tags="Z字变换"><span class="iconfont-archer">&#xe606;</span>Z字变换</span>
+    
+        <span class="sidebar-tag-name" data-tags="数据结构"><span class="iconfont-archer">&#xe606;</span>数据结构</span>
+    
+        <span class="sidebar-tag-name" data-tags="Git"><span class="iconfont-archer">&#xe606;</span>Git</span>
+    
+        <span class="sidebar-tag-name" data-tags="rebase"><span class="iconfont-archer">&#xe606;</span>rebase</span>
+    
+        <span class="sidebar-tag-name" data-tags="English"><span class="iconfont-archer">&#xe606;</span>English</span>
+    
+        <span class="sidebar-tag-name" data-tags="grammar"><span class="iconfont-archer">&#xe606;</span>grammar</span>
+    
+        <span class="sidebar-tag-name" data-tags="health"><span class="iconfont-archer">&#xe606;</span>health</span>
+    
+        <span class="sidebar-tag-name" data-tags="ios"><span class="iconfont-archer">&#xe606;</span>ios</span>
+    
+        <span class="sidebar-tag-name" data-tags="nfc"><span class="iconfont-archer">&#xe606;</span>nfc</span>
+    
+        <span class="sidebar-tag-name" data-tags="法律"><span class="iconfont-archer">&#xe606;</span>法律</span>
+    
+        <span class="sidebar-tag-name" data-tags="二分查找"><span class="iconfont-archer">&#xe606;</span>二分查找</span>
+    
+        <span class="sidebar-tag-name" data-tags="分治算法"><span class="iconfont-archer">&#xe606;</span>分治算法</span>
+    
+        <span class="sidebar-tag-name" data-tags="字符串"><span class="iconfont-archer">&#xe606;</span>字符串</span>
+    
+        <span class="sidebar-tag-name" data-tags="滑动窗口"><span class="iconfont-archer">&#xe606;</span>滑动窗口</span>
+    
+        <span class="sidebar-tag-name" data-tags="贪心算法"><span class="iconfont-archer">&#xe606;</span>贪心算法</span>
+    
+        <span class="sidebar-tag-name" data-tags="分治"><span class="iconfont-archer">&#xe606;</span>分治</span>
+    
+        <span class="sidebar-tag-name" data-tags="递归回溯"><span class="iconfont-archer">&#xe606;</span>递归回溯</span>
+    
+        <span class="sidebar-tag-name" data-tags="递归"><span class="iconfont-archer">&#xe606;</span>递归</span>
+    
+        <span class="sidebar-tag-name" data-tags="链表"><span class="iconfont-archer">&#xe606;</span>链表</span>
+    
+        <span class="sidebar-tag-name" data-tags="栈"><span class="iconfont-archer">&#xe606;</span>栈</span>
+    
+        <span class="sidebar-tag-name" data-tags="反转整数"><span class="iconfont-archer">&#xe606;</span>反转整数</span>
+    
+        <span class="sidebar-tag-name" data-tags="字符串转整数"><span class="iconfont-archer">&#xe606;</span>字符串转整数</span>
+    
+        <span class="sidebar-tag-name" data-tags="支付系统"><span class="iconfont-archer">&#xe606;</span>支付系统</span>
+    
+        <span class="sidebar-tag-name" data-tags="支付架构"><span class="iconfont-archer">&#xe606;</span>支付架构</span>
+    
+        <span class="sidebar-tag-name" data-tags="最优解"><span class="iconfont-archer">&#xe606;</span>最优解</span>
+    
+        <span class="sidebar-tag-name" data-tags="debug"><span class="iconfont-archer">&#xe606;</span>debug</span>
+    
+        <span class="sidebar-tag-name" data-tags="调试代码"><span class="iconfont-archer">&#xe606;</span>调试代码</span>
+    
+        <span class="sidebar-tag-name" data-tags="python3基础"><span class="iconfont-archer">&#xe606;</span>python3基础</span>
+    
+        <span class="sidebar-tag-name" data-tags="marathon"><span class="iconfont-archer">&#xe606;</span>marathon</span>
+    
+        <span class="sidebar-tag-name" data-tags="Effective-Java"><span class="iconfont-archer">&#xe606;</span>Effective-Java</span>
+    
+        <span class="sidebar-tag-name" data-tags="读书笔记"><span class="iconfont-archer">&#xe606;</span>读书笔记</span>
+    
+        <span class="sidebar-tag-name" data-tags="工具教程"><span class="iconfont-archer">&#xe606;</span>工具教程</span>
+    
+        <span class="sidebar-tag-name" data-tags="博客统计插件"><span class="iconfont-archer">&#xe606;</span>博客统计插件</span>
+    
+        <span class="sidebar-tag-name" data-tags="icarus主题配置"><span class="iconfont-archer">&#xe606;</span>icarus主题配置</span>
+    
+        <span class="sidebar-tag-name" data-tags="hexo主题"><span class="iconfont-archer">&#xe606;</span>hexo主题</span>
+    
+        <span class="sidebar-tag-name" data-tags="think"><span class="iconfont-archer">&#xe606;</span>think</span>
+    
+        <span class="sidebar-tag-name" data-tags="幂等性"><span class="iconfont-archer">&#xe606;</span>幂等性</span>
+    
+        <span class="sidebar-tag-name" data-tags="restful-api"><span class="iconfont-archer">&#xe606;</span>restful-api</span>
+    
+        <span class="sidebar-tag-name" data-tags="sql"><span class="iconfont-archer">&#xe606;</span>sql</span>
+    
+        <span class="sidebar-tag-name" data-tags="秒杀系统，支付设计"><span class="iconfont-archer">&#xe606;</span>秒杀系统，支付设计</span>
+    
+        <span class="sidebar-tag-name" data-tags="前端技术"><span class="iconfont-archer">&#xe606;</span>前端技术</span>
+    
+        <span class="sidebar-tag-name" data-tags="经验成长"><span class="iconfont-archer">&#xe606;</span>经验成长</span>
+    
+        <span class="sidebar-tag-name" data-tags="西安"><span class="iconfont-archer">&#xe606;</span>西安</span>
+    
+        <span class="sidebar-tag-name" data-tags="长安"><span class="iconfont-archer">&#xe606;</span>长安</span>
+    
+        <span class="sidebar-tag-name" data-tags="旅行"><span class="iconfont-archer">&#xe606;</span>旅行</span>
+    
+        <span class="sidebar-tag-name" data-tags="java"><span class="iconfont-archer">&#xe606;</span>java</span>
+    
+        <span class="sidebar-tag-name" data-tags="设计模式"><span class="iconfont-archer">&#xe606;</span>设计模式</span>
+    
+        <span class="sidebar-tag-name" data-tags="elasticsearch6"><span class="iconfont-archer">&#xe606;</span>elasticsearch6</span>
+    
+        <span class="sidebar-tag-name" data-tags="query"><span class="iconfont-archer">&#xe606;</span>query</span>
+    
+        <span class="sidebar-tag-name" data-tags="feign"><span class="iconfont-archer">&#xe606;</span>feign</span>
+    
+        <span class="sidebar-tag-name" data-tags="spring cloud"><span class="iconfont-archer">&#xe606;</span>spring cloud</span>
+    
+        <span class="sidebar-tag-name" data-tags="springboot"><span class="iconfont-archer">&#xe606;</span>springboot</span>
+    
+        <span class="sidebar-tag-name" data-tags="动态规划"><span class="iconfont-archer">&#xe606;</span>动态规划</span>
+    
+        <span class="sidebar-tag-name" data-tags="中心扩展"><span class="iconfont-archer">&#xe606;</span>中心扩展</span>
+    
+        <span class="sidebar-tag-name" data-tags="dp"><span class="iconfont-archer">&#xe606;</span>dp</span>
+    
+        <span class="sidebar-tag-name" data-tags="vim"><span class="iconfont-archer">&#xe606;</span>vim</span>
+    
+        <span class="sidebar-tag-name" data-tags="docker"><span class="iconfont-archer">&#xe606;</span>docker</span>
+    
+        <span class="sidebar-tag-name" data-tags="b+tree"><span class="iconfont-archer">&#xe606;</span>b+tree</span>
+    
+        <span class="sidebar-tag-name" data-tags="聚簇索引"><span class="iconfont-archer">&#xe606;</span>聚簇索引</span>
+    
+        <span class="sidebar-tag-name" data-tags="mysql"><span class="iconfont-archer">&#xe606;</span>mysql</span>
+    
+        <span class="sidebar-tag-name" data-tags="索引"><span class="iconfont-archer">&#xe606;</span>索引</span>
+    
+        <span class="sidebar-tag-name" data-tags="redis"><span class="iconfont-archer">&#xe606;</span>redis</span>
+    
+        <span class="sidebar-tag-name" data-tags="hash冲突"><span class="iconfont-archer">&#xe606;</span>hash冲突</span>
+    
+        <span class="sidebar-tag-name" data-tags="rehash"><span class="iconfont-archer">&#xe606;</span>rehash</span>
+    
+        <span class="sidebar-tag-name" data-tags="科普"><span class="iconfont-archer">&#xe606;</span>科普</span>
+    
+        <span class="sidebar-tag-name" data-tags="spring"><span class="iconfont-archer">&#xe606;</span>spring</span>
+    
+        <span class="sidebar-tag-name" data-tags="Schedule"><span class="iconfont-archer">&#xe606;</span>Schedule</span>
+    
+        <span class="sidebar-tag-name" data-tags="Kafka"><span class="iconfont-archer">&#xe606;</span>Kafka</span>
+    
+        <span class="sidebar-tag-name" data-tags="正则表达式"><span class="iconfont-archer">&#xe606;</span>正则表达式</span>
+    
+        <span class="sidebar-tag-name" data-tags="mybatis"><span class="iconfont-archer">&#xe606;</span>mybatis</span>
+    
+        <span class="sidebar-tag-name" data-tags="Valid"><span class="iconfont-archer">&#xe606;</span>Valid</span>
+    
+        <span class="sidebar-tag-name" data-tags="bean"><span class="iconfont-archer">&#xe606;</span>bean</span>
+    
+        <span class="sidebar-tag-name" data-tags="索引分词"><span class="iconfont-archer">&#xe606;</span>索引分词</span>
+    
+        <span class="sidebar-tag-name" data-tags="swagger"><span class="iconfont-archer">&#xe606;</span>swagger</span>
+    
+        <span class="sidebar-tag-name" data-tags="党章"><span class="iconfont-archer">&#xe606;</span>党章</span>
+    
+        <span class="sidebar-tag-name" data-tags="集合"><span class="iconfont-archer">&#xe606;</span>集合</span>
+    
+        <span class="sidebar-tag-name" data-tags="并发"><span class="iconfont-archer">&#xe606;</span>并发</span>
+    
+        <span class="sidebar-tag-name" data-tags="多线程"><span class="iconfont-archer">&#xe606;</span>多线程</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br/>
+    1、请确保node版本大于6.2<br/>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br/>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br/>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="algorithm"><span class="iconfont-archer">&#xe60a;</span>algorithm</span>
+    
+        <span class="sidebar-category-name" data-categories="数据结构"><span class="iconfont-archer">&#xe60a;</span>数据结构</span>
+    
+        <span class="sidebar-category-name" data-categories="基础工具类"><span class="iconfont-archer">&#xe60a;</span>基础工具类</span>
+    
+        <span class="sidebar-category-name" data-categories="English"><span class="iconfont-archer">&#xe60a;</span>English</span>
+    
+        <span class="sidebar-category-name" data-categories="health"><span class="iconfont-archer">&#xe60a;</span>health</span>
+    
+        <span class="sidebar-category-name" data-categories="ios"><span class="iconfont-archer">&#xe60a;</span>ios</span>
+    
+        <span class="sidebar-category-name" data-categories="法律"><span class="iconfont-archer">&#xe60a;</span>法律</span>
+    
+        <span class="sidebar-category-name" data-categories="基础工具类/Git"><span class="iconfont-archer">&#xe60a;</span>基础工具类/Git</span>
+    
+        <span class="sidebar-category-name" data-categories="English/grammar"><span class="iconfont-archer">&#xe60a;</span>English/grammar</span>
+    
+        <span class="sidebar-category-name" data-categories="架构"><span class="iconfont-archer">&#xe60a;</span>架构</span>
+    
+        <span class="sidebar-category-name" data-categories="develop"><span class="iconfont-archer">&#xe60a;</span>develop</span>
+    
+        <span class="sidebar-category-name" data-categories="架构/设计"><span class="iconfont-archer">&#xe60a;</span>架构/设计</span>
+    
+        <span class="sidebar-category-name" data-categories="python3"><span class="iconfont-archer">&#xe60a;</span>python3</span>
+    
+        <span class="sidebar-category-name" data-categories="marathon"><span class="iconfont-archer">&#xe60a;</span>marathon</span>
+    
+        <span class="sidebar-category-name" data-categories="java"><span class="iconfont-archer">&#xe60a;</span>java</span>
+    
+        <span class="sidebar-category-name" data-categories="工具教程"><span class="iconfont-archer">&#xe60a;</span>工具教程</span>
+    
+        <span class="sidebar-category-name" data-categories="java/读书笔记"><span class="iconfont-archer">&#xe60a;</span>java/读书笔记</span>
+    
+        <span class="sidebar-category-name" data-categories="think"><span class="iconfont-archer">&#xe60a;</span>think</span>
+    
+        <span class="sidebar-category-name" data-categories="工具教程/主题工具"><span class="iconfont-archer">&#xe60a;</span>工具教程/主题工具</span>
+    
+        <span class="sidebar-category-name" data-categories="工具教程/博客统计插件"><span class="iconfont-archer">&#xe60a;</span>工具教程/博客统计插件</span>
+    
+        <span class="sidebar-category-name" data-categories="数据库"><span class="iconfont-archer">&#xe60a;</span>数据库</span>
+    
+        <span class="sidebar-category-name" data-categories="前端技术"><span class="iconfont-archer">&#xe60a;</span>前端技术</span>
+    
+        <span class="sidebar-category-name" data-categories="数据库/mysql"><span class="iconfont-archer">&#xe60a;</span>数据库/mysql</span>
+    
+        <span class="sidebar-category-name" data-categories="经验成长"><span class="iconfont-archer">&#xe60a;</span>经验成长</span>
+    
+        <span class="sidebar-category-name" data-categories="travel"><span class="iconfont-archer">&#xe60a;</span>travel</span>
+    
+        <span class="sidebar-category-name" data-categories="java/java基础"><span class="iconfont-archer">&#xe60a;</span>java/java基础</span>
+    
+        <span class="sidebar-category-name" data-categories="java/设计模式"><span class="iconfont-archer">&#xe60a;</span>java/设计模式</span>
+    
+        <span class="sidebar-category-name" data-categories="java/elasticsearch6"><span class="iconfont-archer">&#xe60a;</span>java/elasticsearch6</span>
+    
+        <span class="sidebar-category-name" data-categories="java/框架"><span class="iconfont-archer">&#xe60a;</span>java/框架</span>
+    
+        <span class="sidebar-category-name" data-categories="java/springboot"><span class="iconfont-archer">&#xe60a;</span>java/springboot</span>
+    
+        <span class="sidebar-category-name" data-categories="基础工具类/Vim"><span class="iconfont-archer">&#xe60a;</span>基础工具类/Vim</span>
+    
+        <span class="sidebar-category-name" data-categories="基础工具类/docker"><span class="iconfont-archer">&#xe60a;</span>基础工具类/docker</span>
+    
+        <span class="sidebar-category-name" data-categories="数据库/redis"><span class="iconfont-archer">&#xe60a;</span>数据库/redis</span>
+    
+        <span class="sidebar-category-name" data-categories="架构/Kafka"><span class="iconfont-archer">&#xe60a;</span>架构/Kafka</span>
+    
+        <span class="sidebar-category-name" data-categories="java/JVM"><span class="iconfont-archer">&#xe60a;</span>java/JVM</span>
+    
+        <span class="sidebar-category-name" data-categories="基础工具类/正则"><span class="iconfont-archer">&#xe60a;</span>基础工具类/正则</span>
+    
+        <span class="sidebar-category-name" data-categories="数据库/mybatis"><span class="iconfont-archer">&#xe60a;</span>数据库/mybatis</span>
+    
+        <span class="sidebar-category-name" data-categories="java/spring"><span class="iconfont-archer">&#xe60a;</span>java/spring</span>
+    
+        <span class="sidebar-category-name" data-categories="科普"><span class="iconfont-archer">&#xe60a;</span>科普</span>
+    
+        <span class="sidebar-category-name" data-categories="java/并发"><span class="iconfont-archer">&#xe60a;</span>java/并发</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/archer.io/",
+        author: "John Doe"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/archer.io/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/archer.io/scripts/main.js"></script>
+    <!-- algolia -->
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/archer.io/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+
